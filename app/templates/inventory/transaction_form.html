@@ -1,0 +1,477 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - AI Inventory Tracker{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="{{ url_for('inventory.transactions') }}" class="btn btn-icon btn-outline-primary me-3">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+    <h1 class="page-title mb-0">{{ title }}</h1>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card shadow-sm transaction-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="card-icon-lg bg-primary bg-opacity-10 text-primary rounded-circle me-3">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <h5 class="mb-0">Transaction Details</h5>
+                </div>
+                <span class="badge bg-primary rounded-pill px-3">New Entry</span>
+            </div>
+
+            <div class="card-body">
+                <form method="POST" id="transaction-form">
+                    {{ form.hidden_tag() }}
+
+                    <div class="row g-4">
+                        <div class="col-lg-7">
+                            <div class="row g-3">
+                                <!--==========================
+                                  Select Product Field
+                                  ==========================-->
+                                <div class="col-lg-12">
+                                    <div class="mb-3">
+                                        <label for="product_id" class="form-label">Select Product*</label>
+                                        {{ form.product_id(
+                                             class="form-select" + (" is-invalid" if form.product_id.errors else ""),
+                                             id="product_id"
+                                          ) }}
+                                        {% if form.product_id.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.product_id.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!--==========================
+                                  Transaction Type Field
+                                  ==========================-->
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="transaction_type" class="form-label">Transaction Type*</label>
+                                        {{ form.transaction_type(
+                                             class="form-select" + (" is-invalid" if form.transaction_type.errors else ""),
+                                             id="transaction_type"
+                                          ) }}
+                                        {% if form.transaction_type.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.transaction_type.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Removed the “Purchase: Increases stock / Sale: Decreases stock” helper text -->
+
+                                <!--==========================
+                                  Transaction Date Field
+                                  ==========================-->
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        {{ form.transaction_date(
+                                             class="form-control" + (" is-invalid" if form.transaction_date.errors else ""),
+                                             id="transaction_date"
+                                          ) }}
+                                        <label for="transaction_date">Transaction Date*</label>
+                                        {% if form.transaction_date.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.transaction_date.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!--==========================
+                                  Quantity Field
+                                  ==========================-->
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        {{ form.quantity(
+                                             class="form-control" + (" is-invalid" if form.quantity.errors else ""),
+                                             id="quantity", placeholder="Quantity"
+                                          ) }}
+                                        <label for="quantity">Quantity*</label>
+                                        {% if form.quantity.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.quantity.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!--==========================
+                                  Unit Price Field
+                                  ==========================-->
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        {{ form.unit_price(
+                                             class="form-control" + (" is-invalid" if form.unit_price.errors else ""),
+                                             id="unit_price", placeholder="Unit Price"
+                                          ) }}
+                                        <label for="unit_price">Unit Price*</label>
+                                        {% if form.unit_price.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.unit_price.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!--==========================
+                                  Notes Field
+                                  ==========================-->
+                                <div class="col-lg-12">
+                                    <div class="form-floating mb-3">
+                                        {{ form.notes(
+                                             class="form-control" + (" is-invalid" if form.notes.errors else ""),
+                                             id="notes", rows=3,
+                                             style="height: 100px",
+                                             placeholder="Enter any additional notes"
+                                          ) }}
+                                        <label for="notes">Notes</label>
+                                        {% if form.notes.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.notes.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!--==========================
+                          Right‐Hand: Transaction Summary
+                          ==========================-->
+                        <div class="col-lg-5">
+                            <div class="card transaction-summary-card">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-4 text-primary">
+                                        <i class="fas fa-clipboard-check me-2"></i>Transaction Summary
+                                    </h5>
+
+                                    <div class="transaction-summary-content">
+                                        <div class="summary-item">
+                                            <div class="summary-label">
+                                                <i class="fas fa-tag text-primary me-2"></i>
+                                                <span>Product:</span>
+                                            </div>
+                                            <div id="summary-product" class="summary-value">
+                                                Select a product
+                                            </div>
+                                        </div>
+
+                                        <div class="summary-item">
+                                            <div class="summary-label">
+                                                <i class="fas fa-exchange-alt text-primary me-2"></i>
+                                                <span>Transaction:</span>
+                                            </div>
+                                            <div id="summary-transaction" class="summary-value">-</div>
+                                        </div>
+
+                                        <div class="summary-item">
+                                            <div class="summary-label">
+                                                <i class="fas fa-hashtag text-primary me-2"></i>
+                                                <span>Quantity:</span>
+                                            </div>
+                                            <div id="summary-quantity" class="summary-value">0</div>
+                                        </div>
+
+                                        <div class="summary-item">
+                                            <div class="summary-label">
+                                                <i class="fas fa-dollar-sign text-primary me-2"></i>
+                                                <span>Unit Price:</span>
+                                            </div>
+                                            <div id="summary-price" class="summary-value">$0.00</div>
+                                        </div>
+
+                                        <div class="summary-divider my-3 border-top"></div>
+
+                                        <div class="summary-item">
+                                            <div class="summary-label">
+                                                <i class="fas fa-calculator text-primary me-2"></i>
+                                                <span>Total Value:</span>
+                                            </div>
+                                            <div id="total-value" class="summary-value total-value">$0.00</div>
+                                        </div>
+
+                                        <div class="summary-item">
+                                            <div class="summary-label">
+                                                <i class="fas fa-cubes text-primary me-2"></i>
+                                                <span>Current Stock:</span>
+                                            </div>
+                                            <div id="current-stock" class="summary-value">-</div>
+                                        </div>
+
+                                        <div class="summary-item highlight-item">
+                                            <div class="summary-label">
+                                                <i class="fas fa-layer-group text-primary me-2"></i>
+                                                <span>New Stock Level:</span>
+                                            </div>
+                                            <div id="new-stock-level-container" class="summary-value">
+                                                <span id="new-stock-level" class="fw-bold">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="action-buttons mt-4">
+                                        <div class="d-grid gap-2">
+                                            {{ form.submit(class="btn btn-primary btn-lg") }}
+                                            <a href="{{ url_for('inventory.transactions') }}"
+                                               class="btn btn-outline-secondary">
+                                                <i class="fas fa-times me-2"></i>Cancel
+                                            </a>
+                                        </div>
+                                        <div class="keyboard-shortcut mt-3 text-center">
+                                            <small class="text-muted">
+                                                <i class="fas fa-keyboard me-1"></i> Press <kbd>Alt</kbd> + <kbd>S</kbd> to submit
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- /.col-lg-5 -->
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Only run on “Add Transaction” page
+    const transactionForm = document.getElementById('transaction-form');
+    if (!transactionForm) return;
+
+    // Grab all elements from the summary pane:
+    const productSelect         = document.getElementById('product_id');
+    const transactionTypeSelect = document.getElementById('transaction_type');
+    const quantityInput         = document.getElementById('quantity');
+    const unitPriceInput        = document.getElementById('unit_price');
+    const summaryProduct        = document.getElementById('summary-product');
+    const summaryTransaction    = document.getElementById('summary-transaction');
+    const summaryQuantity       = document.getElementById('summary-quantity');
+    const summaryPrice          = document.getElementById('summary-price');
+    const totalValue            = document.getElementById('total-value');
+    const currentStockElem      = document.getElementById('current-stock');
+    const newStockLevel         = document.getElementById('new-stock-level');
+    const newStockLevelContainer= document.getElementById('new-stock-level-container');
+
+    // Build a JS object “productData” from the server‐rendered “products” list
+    const productData = {};
+    {% for product in products %}
+    productData[{{ product.id }}] = {
+        // If your product.name could contain quotes, we’ve replaced them with \" here:
+        name: "{{ product.name|replace('"','\\"') }}",
+        price: {{ product.unit_price }},
+        stock: {{ product.quantity_in_stock }}
+    };
+    {% endfor %}
+
+    // A small helper to highlight an element
+    function animateHighlight(el) {
+        el.classList.add('animate-update');
+        setTimeout(() => el.classList.remove('animate-update'), 500);
+    }
+
+    // Recompute all summary fields whenever anything changes
+    function updateCalculations() {
+        const pid   = productSelect.value;
+        const qty   = parseFloat(quantityInput.value) || 0;
+        const price = parseFloat(unitPriceInput.value) || 0;
+        const type  = transactionTypeSelect.value;
+
+        // 1) Transaction text + color
+        if (type === 'purchase') {
+            summaryTransaction.textContent = 'Purchase (Stock +)';
+            summaryTransaction.className    = 'summary-value text-success';
+        }
+        else if (type === 'sale') {
+            summaryTransaction.textContent = 'Sale (Stock -)';
+            summaryTransaction.className    = 'summary-value text-warning';
+        }
+        else {
+            summaryTransaction.textContent = '-';
+            summaryTransaction.className    = 'summary-value';
+        }
+
+        // 2) Quantity & Price
+        summaryQuantity.textContent = qty;
+        summaryPrice.textContent    = '$' + price.toFixed(2);
+
+        // 3) Total Value (with highlight)
+        animateHighlight(totalValue);
+        totalValue.textContent = '$' + (qty * price).toFixed(2);
+
+        // 4) New Stock Level (with highlight)
+        if (pid && productData[pid]) {
+            let newStock = productData[pid].stock;
+            if (type === 'purchase') newStock += qty;
+            if (type === 'sale')    newStock -= qty;
+
+            if (newStock < 0) {
+                newStockLevel.textContent = 'Error: Not enough stock';
+                newStockLevelContainer.classList.add('text-danger');
+            } else {
+                newStockLevel.textContent = newStock;
+                newStockLevelContainer.classList.remove('text-danger');
+            }
+            animateHighlight(newStockLevel);
+        } else {
+            newStockLevel.textContent = '-';
+            newStockLevelContainer.classList.remove('text-danger');
+        }
+    }
+
+    // Called when Product dropdown changes:
+    function updateProductInfo() {
+        const pid = productSelect.value;
+        if (!pid || !(pid in productData)) {
+            // No selection → reset all summary fields
+            summaryProduct.textContent     = 'Select a product';
+            summaryQuantity.textContent    = '0';
+            summaryPrice.textContent       = '$0.00';
+            summaryTransaction.textContent = '-';
+            totalValue.textContent         = '$0.00';
+            currentStockElem.textContent   = '-';
+            newStockLevel.textContent      = '-';
+            newStockLevelContainer.classList.remove('text-danger');
+            return;
+        }
+
+        // We have a valid product ID:
+        const pd = productData[pid];
+        unitPriceInput.value    = pd.price;
+        summaryProduct.textContent   = pd.name;
+        currentStockElem.textContent = pd.stock;
+
+        // 1) Disable “Sale” if stock is zero
+        transactionTypeSelect.querySelectorAll('option').forEach(opt => {
+            if (opt.value === 'sale') {
+                opt.disabled = (pd.stock <= 0);
+            }
+        });
+
+        // 2) Recompute everything (quantity, total, new stock)
+        updateCalculations();
+    }
+
+    // Wire up listeners
+    productSelect.addEventListener('change', updateProductInfo);
+    transactionTypeSelect.addEventListener('change', updateCalculations);
+    quantityInput.addEventListener('input', updateCalculations);
+    unitPriceInput.addEventListener('input', updateCalculations);
+
+    // If a product is already pre‐selected on load, populate immediately
+    if (productSelect.value) {
+        updateProductInfo();
+    }
+});
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+    .card-icon-lg {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+    }
+    .total-value {
+        font-size: 1.25rem;
+        color: var(--primary-color);
+        font-weight: 700;
+    }
+    @keyframes highlight {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    .animate-update {
+        animation: highlight 0.5s ease;
+    }
+    .btn-icon {
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        padding: 0;
+    }
+    .transaction-card {
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+    }
+    .transaction-summary-card {
+        background-color: var(--bg-light);
+        border-radius: var(--radius-md);
+        height: 100%;
+    }
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+    }
+    .summary-label {
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+    .summary-value {
+        font-weight: 600;
+    }
+    .highlight-item {
+        background-color: rgba(67, 97, 238, 0.05);
+        padding: 10px;
+        border-radius: var(--radius-md);
+        margin-top: 8px;
+    }
+    kbd {
+        background-color: var(--dark-color);
+        color: white;
+        padding: 2px 5px;
+        border-radius: 3px;
+        font-size: 12px;
+    }
+    .form-floating > .form-control,
+    .form-floating > .form-select {
+        height: calc(3.5rem + 2px);
+        padding: 1rem 0.75rem;
+    }
+    .form-floating > textarea.form-control {
+        height: 100px;
+        min-height: 100px;
+    }
+    .form-floating > label {
+        padding: 1rem 0.75rem;
+    }
+</style>
+{% endblock %}

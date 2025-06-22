@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Purchase Orders - AI Inventory Tracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-file-invoice text-primary me-2"></i>Purchase Orders
+        </h1>
+        <a href="{{ url_for('inventory.add_purchase_order') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Create Purchase Order
+        </a>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped" id="ordersTable">
+                    <thead>
+                        <tr>
+                            <th>Order #</th>
+                            <th>Supplier</th>
+                            <th>Order Date</th>
+                            <th>Expected Delivery</th>
+                            <th>Status</th>
+                            <th>Total Amount</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                            <tr>
+                                <td>PO-{{ order.id }}</td>
+                                <td>{{ order.supplier.name }}</td>
+                                <td>{{ order.order_date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ order.expected_delivery_date.strftime('%Y-%m-%d') if order.expected_delivery_date else 'Not specified' }}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if order.status == 'pending' %}bg-warning text-dark
+                                        {% elif order.status == 'approved' %}bg-info
+                                        {% elif order.status == 'received' %}bg-success
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ order.status|capitalize }}
+                                    </span>
+                                </td>
+                                <td>${{ "%.2f"|format(order.total_amount) }}</td>
+                                <td>
+                                    <a href="{{ url_for('inventory.view_purchase_order', order_id=order.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#ordersTable').DataTable({
+            order: [[2, 'desc']],
+            columnDefs: [
+                { orderable: false, targets: 6 }
+            ],
+            language: {
+                search: "Search purchase orders:",
+                lengthMenu: "Show _MENU_ orders per page",
+                info: "Showing _START_ to _END_ of _TOTAL_ orders",
+                infoEmpty: "No orders found",
+                infoFiltered: "(filtered from _MAX_ total orders)"
+            }
+        });
+    });
+</script>
+{% endblock %}

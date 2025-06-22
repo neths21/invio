@@ -1,0 +1,55 @@
+# Python bytecode files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.env
+
+# Environment variables and secrets
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Flask instance folder
+instance/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Generated files
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Migration files - keep them in version control, but ignore any merge conflict files
+migrations/versions/__pycache__/
+
+# Local configuration
+config.local.py
+
+analysis/
+test/

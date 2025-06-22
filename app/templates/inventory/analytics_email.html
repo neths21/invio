@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Inventory Analytics Report</title>
+    <style>
+      body { font-family: Arial, sans-serif; color: #333; }
+      h2    { color: #0056b3; }
+      table { width: 100%; border-collapse: collapse; margin-top: 1rem;}
+      th, td { border: 1px solid #ccc; padding: 8px; text-align: left;}
+      th { background-color: #f0f0f0; }
+      .summary { margin-top: 1rem; }
+    </style>
+  </head>
+  <body>
+    <h2>Inventory Analytics Report</h2>
+    <p>Run Date: {{ run_date.strftime("%Y-%m-%d %H:%M:%S") }}</p>
+
+    <h3>Key Metrics</h3>
+    <ul>
+      <li>Total Products Analyzed: {{ ml_results|length }}</li>
+      <li>Immediate Restocks: {{ ml_results|selectattr("predicted_days_until_reorder","equalto",0)|list|length }}</li>
+    </ul>
+
+    <h3>Detailed Results</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Product</th><th>Popularity</th><th>Days to Reorder</th><th>Summary</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in ml_results %}
+        <tr>
+          <td>{{ r.product_name }}</td>
+          <td>{{ r.popularity_index }}</td>
+          <td>{{ "%.1f"|format(r.predicted_days_until_reorder) }}</td>
+          <td>{{ r.ai_summary }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <p class="summary">Thank you,<br>Your Inventory Analytics Bot</p>
+  </body>
+</html>

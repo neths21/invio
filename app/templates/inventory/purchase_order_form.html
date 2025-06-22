@@ -1,0 +1,339 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - AI Inventory Tracker{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="{{ url_for('inventory.purchase_orders') }}" class="btn btn-sm btn-icon btn-outline-primary me-2">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+    <h1 class="mb-0 fs-4 fw-semibold">{{ title }}</h1>
+</div>
+
+<div class="card">    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Purchase Order Details</h5>
+        <span class="badge badge-primary">{% if order %}Edit Order #{{ order.id }}{% else %}New Order{% endif %}</span>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="mb-4">
+                        <label for="supplier_id" class="form-label">Supplier*</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0">
+                                <i class="fas fa-truck"></i>
+                            </span>
+                            {{ form.supplier_id(class="form-select border-start-0" + (" is-invalid" if form.supplier_id.errors else "")) }}
+                        </div>
+                        {% if form.supplier_id.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.supplier_id.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="order_date" class="form-label">Order Date*</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0">
+                                <i class="fas fa-calendar-alt"></i>
+                            </span>
+                            {{ form.order_date(class="form-control border-start-0" + (" is-invalid" if form.order_date.errors else ""), type="date") }}
+                        </div>
+                        {% if form.order_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.order_date.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="expected_delivery_date" class="form-label">Expected Delivery Date*</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0">
+                                <i class="fas fa-truck-loading"></i>
+                            </span>
+                            {{ form.expected_delivery_date(class="form-control border-start-0" + (" is-invalid" if form.expected_delivery_date.errors else ""), type="date") }}
+                        </div>
+                        {% if form.expected_delivery_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.expected_delivery_date.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="mb-4">
+                        <label for="status" class="form-label">Status*</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0">
+                                <i class="fas fa-tag"></i>
+                            </span>
+                            {{ form.status(class="form-select border-start-0" + (" is-invalid" if form.status.errors else "")) }}
+                        </div>
+                        {% if form.status.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.status.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+  
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Order Items</h5>
+                    <button type="button" id="add-item-btn" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus me-1"></i>Add Item
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th>Total</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="items-container">
+                                {% if order and order.items %}
+                                    {% for item in order.items %}
+                                        <tr class="item-row">
+                                            <td style="width: 40%;">
+                                                <select name="items[{{ loop.index0 }}][product_id]" class="form-select" required>
+                                                    <option value="">Select Product</option>
+                                                    {% for product in products %}
+                                                        <option value="{{ product.id }}" {% if product.id == item.product_id %}selected{% endif %}>
+                                                            {{ product.name }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </td>
+                                            <td style="width: 20%;">
+                                                <input type="number" name="items[{{ loop.index0 }}][quantity]" class="form-control quantity-input" 
+                                                    placeholder="Qty" min="1" required value="{{ item.quantity }}">
+                                            </td>
+                                            <td style="width: 20%;">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">$</span>
+                                                    <input type="number" name="items[{{ loop.index0 }}][unit_price]" class="form-control price-input" 
+                                                        placeholder="0.00" step="0.01" min="0" required value="{{ item.unit_price }}">
+                                                </div>
+                                            </td>
+                                            <td style="width: 15%;" class="item-total">${{ "%.2f"|format(item.total_price) }}</td>
+                                            <td style="width: 5%;" class="text-end">
+                                                <button type="button" class="btn btn-sm btn-outline-danger remove-item-btn" {% if loop.first %}disabled{% endif %}>
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr class="item-row">
+                                        <td style="width: 40%;">
+                                            <select name="items[0][product_id]" class="form-select" required>
+                                                <option value="">Select Product</option>
+                                                {% for product in products %}
+                                                    <option value="{{ product.id }}">{{ product.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                        <td style="width: 20%;">
+                                            <input type="number" name="items[0][quantity]" class="form-control quantity-input" placeholder="Qty" min="1" required>
+                                        </td>
+                                        <td style="width: 20%;">
+                                            <div class="input-group">
+                                                <span class="input-group-text">$</span>
+                                                <input type="number" name="items[0][unit_price]" class="form-control price-input" placeholder="0.00" step="0.01" min="0" required>
+                                            </div>
+                                        </td>
+                                        <td style="width: 15%;" class="item-total">$0.00</td>
+                                        <td style="width: 5%;" class="text-end">
+                                            <button type="button" class="btn btn-sm btn-outline-danger remove-item-btn" disabled>
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-end fw-bold">Grand Total:</td>
+                                    <td class="fw-bold" id="grand-total">$0.00</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label for="notes" class="form-label">Notes</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0">
+                        <i class="fas fa-sticky-note"></i>
+                    </span>
+                    {{ form.notes(class="form-control border-start-0" + (" is-invalid" if form.notes.errors else ""), rows=3, placeholder="Enter any additional notes about this purchase order") }}
+                </div>
+                {% if form.notes.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.notes.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>                {% endif %}            </div>
+            
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('inventory.purchase_orders') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </a>
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Template for product options (used by JavaScript) -->
+<select id="product-options-template" class="d-none">
+    {% for product in products %}
+        <option value="{{ product.id }}">{{ product.name }}</option>
+    {% endfor %}
+</select>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get elements
+        const itemsContainer = document.getElementById('items-container');
+        const addItemBtn = document.getElementById('add-item-btn');
+        const grandTotalDisplay = document.getElementById('grand-total');
+        
+        // Calculate item total
+        function calculateItemTotal(row) {
+            const quantityInput = row.querySelector('.quantity-input');
+            const priceInput = row.querySelector('.price-input');
+            const totalCell = row.querySelector('.item-total');
+            
+            const quantity = parseFloat(quantityInput.value) || 0;
+            const price = parseFloat(priceInput.value) || 0;
+            const total = quantity * price;
+            
+            totalCell.textContent = '$' + total.toFixed(2);
+            
+            calculateGrandTotal();
+        }
+        
+        // Calculate grand total
+        function calculateGrandTotal() {
+            let grandTotal = 0;
+            const itemRows = document.querySelectorAll('.item-row');
+            
+            itemRows.forEach(row => {
+                const quantityInput = row.querySelector('.quantity-input');
+                const priceInput = row.querySelector('.price-input');
+                
+                const quantity = parseFloat(quantityInput.value) || 0;
+                const price = parseFloat(priceInput.value) || 0;
+                const total = quantity * price;
+                
+                grandTotal += total;
+            });
+            
+            grandTotalDisplay.textContent = '$' + grandTotal.toFixed(2);
+        }
+        
+        // Add event listeners to all existing rows
+        const existingRows = itemsContainer.querySelectorAll('.item-row');
+        existingRows.forEach(row => {
+            const quantityInput = row.querySelector('.quantity-input');
+            const priceInput = row.querySelector('.price-input');
+            const removeBtn = row.querySelector('.remove-item-btn');
+            
+            if (quantityInput && priceInput) {
+                quantityInput.addEventListener('input', () => calculateItemTotal(row));
+                priceInput.addEventListener('input', () => calculateItemTotal(row));
+            }
+            
+            if (removeBtn && !removeBtn.disabled) {
+                removeBtn.addEventListener('click', () => {
+                    row.remove();
+                    calculateGrandTotal();
+                });
+            }
+        });
+        
+        // Calculate initial totals
+        calculateGrandTotal();
+        
+        // Add item row
+        addItemBtn.addEventListener('click', function() {
+            const itemCount = itemsContainer.querySelectorAll('.item-row').length;
+            
+            const newRow = document.createElement('tr');
+            newRow.className = 'item-row';
+            newRow.innerHTML = `
+                <td style="width: 40%;">
+                    <select name="items[${itemCount}][product_id]" class="form-select" required>
+                        <option value="">Select Product</option>
+                        ${document.getElementById('product-options-template').innerHTML}
+                    </select>
+                </td>
+                <td style="width: 20%;">
+                    <input type="number" name="items[${itemCount}][quantity]" class="form-control quantity-input" placeholder="Qty" min="1" required>
+                </td>
+                <td style="width: 20%;">
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" name="items[${itemCount}][unit_price]" class="form-control price-input" placeholder="0.00" step="0.01" min="0" required>
+                    </div>
+                </td>
+                <td style="width: 15%;" class="item-total">$0.00</td>
+                <td style="width: 5%;" class="text-end">
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-item-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </td>
+            `;
+            
+            itemsContainer.appendChild(newRow);
+            
+            // Add event listeners to the new row
+            const quantityInput = newRow.querySelector('.quantity-input');
+            const priceInput = newRow.querySelector('.price-input');
+            const removeBtn = newRow.querySelector('.remove-item-btn');
+            
+            quantityInput.addEventListener('input', function() {
+                calculateItemTotal(newRow);
+            });
+            
+            priceInput.addEventListener('input', function() {
+                calculateItemTotal(newRow);
+            });
+            
+            removeBtn.addEventListener('click', function() {
+                newRow.remove();
+                calculateGrandTotal();
+            });
+        });
+    });
+</script>
+{% endblock %}

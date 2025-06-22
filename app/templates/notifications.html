@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications - AI Inventory Tracker{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0 fs-4 fw-semibold">Notifications Center</h1>
+    <div>
+        {% if notifications %}
+            <button class="btn btn-outline-primary" id="mark-all-read">
+                <i class="fas fa-check-double me-2"></i>Mark All as Read
+            </button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <!-- Notification Summary Card -->
+    <div class="col-xl-3 col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <p class="mb-0 text-muted">Total Notifications</p>
+                        <h3 class="mb-0 fw-semibold">{{ notifications|length }}</h3>
+                    </div>
+                    <div class="icon-container" style="background-color: rgba(67, 97, 238, 0.1); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+                        <i class="fas fa-bell text-primary"></i>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <p class="mb-2 text-muted">Notification Types</p>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Low Stock</span>
+                        <span class="badge badge-warning">{{ low_stock_count|default(0) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Out of Stock</span>
+                        <span class="badge badge-danger">{{ out_of_stock_count|default(0) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Other</span>
+                        <span class="badge badge-primary">{{ other_count|default(0) }}</span>
+                    </div>
+                </div>
+                
+                <div>
+                    <p class="mb-2 text-muted">Status</p>
+                    <div class="progress mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: {% if notifications %}{{ (unread_count / notifications|length) * 100 }}{% else %}0{% endif %}%" aria-valuenow="{{ unread_count|default(0) }}" aria-valuemin="0" aria-valuemax="{{ notifications|length }}"></div>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>{{ unread_count|default(0) }} Unread</span>
+                        <span>{{ (notifications|length) - (unread_count|default(0)) }} Read</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notifications List -->
+    <div class="col-xl-9 col-lg-8">
+        {% if notifications %}
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">All Notifications</h5>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary active" id="all-btn">All</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="unread-btn">Unread</button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for notification in notifications %}
+                            <div class="list-group-item list-group-item-action py-3 px-4 notification-item {% if not notification.is_read %}unread{% endif %}" id="notification-{{ notification.id }}">
+                                <div class="d-flex">
+                                    <div class="notification-icon me-3 {% if notification.notification_type == 'low_stock' %}bg-warning-soft{% elif notification.notification_type == 'out_of_stock' %}bg-danger-soft{% else %}bg-primary-soft{% endif %}" style="width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: {% if notification.notification_type == 'low_stock' %}rgba(247, 37, 133, 0.1){% elif notification.notification_type == 'out_of_stock' %}rgba(229, 56, 59, 0.1){% else %}rgba(67, 97, 238, 0.1){% endif %};">
+                                        <i class="fas {% if notification.notification_type == 'low_stock' %}fa-exclamation-triangle text-warning{% elif notification.notification_type == 'out_of_stock' %}fa-times-circle text-danger{% else %}fa-exclamation-circle text-primary{% endif %} fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex w-100 justify-content-between align-items-center mb-2">
+                                            <h5 class="mb-0 fw-medium">
+                                                {{ notification.product.name }}
+                                                {% if not notification.is_read %}
+                                                    <span class="badge badge-primary ms-2">New</span>
+                                                {% endif %}
+                                            </h5>
+                                            <small class="text-muted">{{ notification.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                        </div>
+                                        <p class="mb-3">{{ notification.message }}</p>
+                                        
+                                        <div class="card bg-light mb-3">
+                                            <div class="card-header d-flex justify-content-between align-items-center py-2 px-3">
+                                                <div>
+                                                    <i class="fas fa-robot text-primary me-2"></i>AI Summary
+                                                </div>
+                                            </div>
+                                            <div class="card-body py-2 px-3">
+                                                <p class="card-text mb-0">{{ notification.ai_summary }}</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <a href="{{ url_for('inventory.view_product', product_id=notification.product_id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye me-1"></i>View Product
+                                            </a>
+                                            {% if not notification.is_read %}
+                                                <button class="btn btn-sm btn-link text-primary mark-read-btn" data-id="{{ notification.id }}">
+                                                    <i class="fas fa-check me-1"></i>Mark as Read
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <div class="empty-state-icon mb-3">
+                        <i class="fas fa-bell-slash fa-3x text-muted"></i>
+                    </div>
+                    <h4>No Notifications</h4>
+                    <p class="text-muted">You don't have any notifications at this time.</p>
+                    <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+                        <i class="fas fa-home me-1"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle mark as read functionality
+        const markReadButtons = document.querySelectorAll('.mark-read-btn');
+        if (markReadButtons) {
+            markReadButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const notificationId = this.getAttribute('data-id');
+                    markNotificationAsRead(notificationId);
+                });
+            });
+        }
+        
+        // Handle mark all as read
+        const markAllReadButton = document.getElementById('mark-all-read');
+        if (markAllReadButton) {
+            markAllReadButton.addEventListener('click', function() {
+                const unreadNotifications = document.querySelectorAll('.notification-item.unread');
+                unreadNotifications.forEach(notification => {
+                    const notificationId = notification.id.replace('notification-', '');
+                    markNotificationAsRead(notificationId);
+                });
+            });
+        }
+        
+        // Handle filter buttons
+        const allBtn = document.getElementById('all-btn');
+        const unreadBtn = document.getElementById('unread-btn');
+        const notifications = document.querySelectorAll('.notification-item');
+        
+        if (allBtn && unreadBtn) {
+            allBtn.addEventListener('click', function() {
+                this.classList.add('active');
+                unreadBtn.classList.remove('active');
+                notifications.forEach(notification => {
+                    notification.style.display = '';
+                });
+            });
+            
+            unreadBtn.addEventListener('click', function() {
+                this.classList.add('active');
+                allBtn.classList.remove('active');
+                notifications.forEach(notification => {
+                    if (notification.classList.contains('unread')) {
+                        notification.style.display = '';
+                    } else {
+                        notification.style.display = 'none';
+                    }
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

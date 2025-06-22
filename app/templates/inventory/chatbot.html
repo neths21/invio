@@ -1,0 +1,388 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventory Chatbot - AI Inventory Tracker{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0 fs-4 fw-semibold">Inventory Chatbot Assistant</h1>
+</div>
+
+<div class="row">
+    <div class="col-lg-9 mx-auto">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Inventory Assistant</h5>
+                <span class="badge bg-success">AI Powered</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="chat-container" id="chatContainer">
+                    <div class="chat-messages" id="chatMessages">                        <!-- Messages will appear here -->
+                        <div class="message bot-message">
+                            <div class="message-content">
+                                <div class="message-text">
+                                    Hello! I'm your inventory assistant. You can ask me about product availability, stock levels, or request to update inventory. How can I help you today?
+                                </div>
+                                <div class="message-time">{{ now.strftime('%H:%M') }}</div>
+                            </div>
+                        </div>
+                    </div>                    <div class="chat-input-container">
+                        <form id="chatForm" class="chat-form">
+                            <div class="input-group">
+                                <input type="text" id="messageInput" class="form-control" placeholder="Type your message here..." required>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Example Queries</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="examples-list">
+                            <div class="example-item" onclick="fillChatInput('What is the current stock level of product X?')">
+                                <i class="fas fa-question-circle text-primary me-2"></i>
+                                What is the current stock level of product X?
+                            </div>
+                            <div class="example-item" onclick="fillChatInput('List all products with low stock.')">
+                                <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                List all products with low stock.
+                            </div>
+                            <div class="example-item" onclick="fillChatInput('When was the last restock for product Y?')">
+                                <i class="fas fa-calendar-alt text-info me-2"></i>
+                                When was the last restock for product Y?
+                            </div>
+                        </div>
+                    </div>                    <div class="col-md-6">
+                        <div class="examples-list">
+                            <div class="example-item" onclick="fillChatInput('Add 20 units to product SKU-1234')">
+                                <i class="fas fa-plus-circle text-success me-2"></i>
+                                Add 20 units to product SKU-1234
+                            </div>
+                            <div class="example-item" onclick="fillChatInput('Remove 10 units from product SKU-1234')">
+                                <i class="fas fa-minus-circle text-danger me-2"></i>
+                                Remove 10 units from product SKU-1234
+                            </div>
+                            <div class="example-item" onclick="fillChatInput('What products do we have from Supplier Z?')">
+                                <i class="fas fa-truck text-secondary me-2"></i>
+                                What products do we have from Supplier Z?
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: 500px;
+        border-radius: 0.25rem;
+        background-color: #fff;
+    }
+    
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .chat-input-container {
+        border-top: 1px solid rgba(0,0,0,0.1);
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-bottom-left-radius: 0.25rem;
+        border-bottom-right-radius: 0.25rem;
+    }
+    
+    .message {
+        display: flex;
+        margin-bottom: 1rem;
+    }
+    
+    .user-message {
+        justify-content: flex-end;
+    }
+    
+    .bot-message {
+        justify-content: flex-start;
+    }
+    
+    .message-content {
+        max-width: 70%;
+        padding: 0.75rem 1rem;
+        border-radius: 1rem;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    
+    .user-message .message-content {
+        background-color: #4361ee;
+        color: white;
+        border-bottom-right-radius: 0.25rem;
+    }
+    
+    .bot-message .message-content {
+        background-color: #f1f5f9;
+        color: #1e293b;
+        border-bottom-left-radius: 0.25rem;
+    }
+      .message-text {
+        margin-bottom: 0.25rem;
+        line-height: 1.5;
+    }
+    
+    /* Bot message text styling for HTML elements */
+    .bot-message .message-text ul, 
+    .bot-message .message-text ol {
+        padding-left: 1.5rem;
+        margin: 0.5rem 0;
+    }
+    
+    .bot-message .message-text li {
+        margin-bottom: 0.25rem;
+    }
+    
+    .bot-message .message-text p {
+        margin-bottom: 0.5rem;
+    }
+    
+    .bot-message .message-text strong,
+    .bot-message .message-text b {
+        font-weight: 600;
+    }
+    
+    .bot-message .message-text em,
+    .bot-message .message-text i {
+        font-style: italic;
+    }
+    
+    .bot-message .message-text code {
+        background-color: rgba(0,0,0,0.05);
+        padding: 0.1rem 0.3rem;
+        border-radius: 0.25rem;
+        font-family: monospace;
+        font-size: 0.9em;
+    }
+    
+    .message-time {
+        font-size: 0.75rem;
+        opacity: 0.7;
+        text-align: right;
+    }
+    
+    .examples-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .example-item {
+        padding: 0.75rem;
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .example-item:hover {
+        background-color: #e9ecef;
+        transform: translateY(-2px);
+        box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+    }
+    
+    .typing-indicator .message-text {
+        display: flex;
+        align-items: center;
+    }
+    
+    .typing-indicator .message-text::after {
+        content: "";
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background-color: currentColor;
+        margin-left: 4px;
+        animation: typingAnimation 1.5s infinite;
+        box-shadow: 6px 0 0 currentColor, 12px 0 0 currentColor;
+    }
+    
+    @keyframes typingAnimation {
+        0% { opacity: 0.3; }
+        50% { opacity: 1; }
+        100% { opacity: 0.3; }
+    }
+    
+    /* Make the input look nicer */
+    #messageInput {
+        border-radius: 20px;
+        padding-left: 15px;
+    }
+    
+    .chat-form button {
+        border-radius: 50%;
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatForm = document.getElementById('chatForm');
+        const messageInput = document.getElementById('messageInput');
+        const chatMessages = document.getElementById('chatMessages');
+          // Function to add a message to the chat
+        function addMessage(content, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isUser ? 'message user-message' : 'message bot-message';
+            
+            const now = new Date();
+            const timeString = now.getHours().toString().padStart(2, '0') + ':' + 
+                             now.getMinutes().toString().padStart(2, '0');
+            
+            // For user messages, use text content directly
+            // For bot messages, use DOMParser to preserve HTML formatting (lists, bold, etc.)
+            let messageTextContent;
+            if (isUser) {
+                messageTextContent = `<div class="message-text">${content}</div>`;
+            } else {
+                // Parse the HTML content first to ensure it's safe and correctly formatted
+                const parser = new DOMParser();
+                const contentDoc = parser.parseFromString(`<div>${content}</div>`, 'text/html');
+                
+                // Get the actual content as HTML
+                messageTextContent = `<div class="message-text">${contentDoc.body.firstChild.innerHTML}</div>`;
+            }
+            
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    ${messageTextContent}
+                    <div class="message-time">${timeString}</div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+          // Handle form submission
+        chatForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const userMessage = messageInput.value.trim();
+            if (!userMessage) return;
+            
+            // Add user message to chat
+            addMessage(userMessage, true);
+            
+            // Clear input
+            messageInput.value = '';
+            
+            // Show typing indicator
+            const typingIndicator = document.createElement('div');
+            typingIndicator.className = 'message bot-message typing-indicator';
+            typingIndicator.innerHTML = `
+                <div class="message-content">
+                    <div class="message-text">Typing...</div>
+                </div>
+            `;
+            chatMessages.appendChild(typingIndicator);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // API endpoint to use - always use main endpoint now
+            const endpoint = '/inventory/chatbot/api';
+            
+            // Make API call to the backend
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: userMessage
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Remove typing indicator
+                chatMessages.removeChild(typingIndicator);
+                  // Check if this was a successful stock update
+                if (data.success === true) {
+                    // This was a confirmation response that led to a stock update
+                    addMessage(data.message);
+                    console.log("Stock update successful:", data);
+                    // Clear the pending update
+                    window.pendingStockUpdate = null;
+                    return;
+                }
+                
+                // Regular response
+                addMessage(data.response);
+                
+                // If there's a stock update confirmation needed
+                if (data.needsConfirmation && data.product) {
+                    // Store the pending update in window object for later reference
+                    window.pendingStockUpdate = {
+                        id: data.product.id,
+                        sku: data.product.sku,
+                        name: data.product.name,
+                        quantity: data.product.quantity,
+                        operation: data.product.operation,
+                        current_stock: data.product.current_stock
+                    };
+                      setTimeout(() => {
+                        // Create appropriate message based on operation
+                        let operationText = window.pendingStockUpdate.operation === 'add' ? 'add' : 'remove';
+                        let newStockLevel = window.pendingStockUpdate.operation === 'add' ? 
+                            window.pendingStockUpdate.current_stock + window.pendingStockUpdate.quantity : 
+                            window.pendingStockUpdate.current_stock - window.pendingStockUpdate.quantity;
+                          const confirmMessage = `Do you want to ${operationText} ${window.pendingStockUpdate.quantity} units ${window.pendingStockUpdate.operation === 'add' ? 'to' : 'from'} <strong>${window.pendingStockUpdate.name}</strong> (SKU: <code>${window.pendingStockUpdate.sku}</code>)? Current stock: ${window.pendingStockUpdate.current_stock} → New stock will be: ${newStockLevel}. Please reply with <strong>'yes'</strong> or <strong>'no'</strong>.`;
+                        addMessage(confirmMessage);
+                    }, 500);
+                }
+            })            .catch(error => {
+                // Remove typing indicator
+                if (typingIndicator.parentNode) {
+                    chatMessages.removeChild(typingIndicator);
+                }
+                
+                // Add error message
+                addMessage('Sorry, I encountered an error processing your request. Please try again.');
+                console.error('Error in chatbot request:', error);
+            });
+        });
+    });
+    
+    // Function to fill the chat input with example queries
+    function fillChatInput(text) {
+        const messageInput = document.getElementById('messageInput');
+        messageInput.value = text;
+        messageInput.focus();
+    }
+</script>
+{% endblock %}

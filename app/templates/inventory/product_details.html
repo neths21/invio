@@ -1,0 +1,317 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }} Details - AI Inventory Tracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('inventory.products') }}">Products</a></li>
+            <li class="breadcrumb-item active">{{ product.name }}</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary bg-opacity-25">
+                    <h5 class="mb-0">
+                        <i class="fas fa-box text-primary me-2"></i>Product Details
+                    </h5>
+                </div>
+                <div class="card-body product-info">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4>{{ product.name }}</h4>
+                            <p class="text-muted">SKU: {{ product.sku }}</p>
+                            
+                            <div class="mb-3">
+                                <p>{{ product.description }}</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong>Category:</strong> {{ product.category.name }}<br>
+                                <strong>Supplier:</strong> {{ product.supplier.name }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">Inventory Status</h5>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Unit Price:</span>
+                                        <span class="fw-bold">${{ "%.2f"|format(product.unit_price) }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>In Stock:</span>
+                                        <span class="fw-bold">{{ product.quantity_in_stock }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Reorder Level:</span>
+                                        <span class="fw-bold">{{ product.reorder_level }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Reorder Quantity:</span>
+                                        <span class="fw-bold">{{ product.reorder_quantity }}</span>
+                                    </div>
+                                    <hr>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Status:</span>
+                                        <span class="fw-bold">
+                                            {% if product.quantity_in_stock <= 0 %}
+                                                <span class="badge bg-danger">Out of Stock</span>
+                                            {% elif product.quantity_in_stock <= product.reorder_level %}
+                                                <span class="badge bg-warning text-dark">Low Stock</span>
+                                            {% else %}
+                                                <span class="badge bg-success">In Stock</span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5 class="border-bottom pb-2 mb-3">AI Inventory Analysis</h5>
+                        <div class="ai-analysis">
+                            <p>{{ analysis|safe }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex mt-4">
+                        <a href="{{ url_for('inventory.edit_product', product_id=product.id) }}" class="btn btn-primary me-2">
+                            <i class="fas fa-edit me-1"></i>Edit Product
+                        </a>
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            <i class="fas fa-trash me-1"></i>Delete Product
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Transaction History -->
+            <div class="card">
+                <div class="card-header bg-primary bg-opacity-25">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history text-primary me-2"></i>Transaction History
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if transactions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Quantity</th>
+                                        <th>Unit Price</th>
+                                        <th>Total</th>
+                                        <th>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for transaction in transactions %}
+                                        <tr>
+                                            <td>{{ transaction.transaction_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                            <td>
+                                                <span class="badge 
+                                                    {% if transaction.transaction_type == 'purchase' %}bg-success
+                                                    {% elif transaction.transaction_type == 'sale' %}bg-primary
+                                                    {% else %}bg-secondary{% endif %}">
+                                                    {{ transaction.transaction_type|capitalize }}
+                                                </span>
+                                            </td>
+                                            <td>{{ transaction.quantity }}</td>
+                                            <td>${{ "%.2f"|format(transaction.unit_price) }}</td>
+                                            <td>${{ "%.2f"|format(transaction.total_price) }}</td>
+                                            <td>{{ transaction.notes }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No transaction history found for this product.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Supplier Info -->
+            <div class="card mb-4">
+                <div class="card-header bg-info bg-opacity-25">
+                    <h5 class="mb-0">
+                        <i class="fas fa-truck text-info me-2"></i>Supplier Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h5>{{ product.supplier.name }}</h5>
+                    {% if product.supplier.contact_person %}
+                        <p><strong>Contact:</strong> {{ product.supplier.contact_person }}</p>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        {% if product.supplier.email %}
+                            <div>
+                                <i class="fas fa-envelope me-2 text-muted"></i>
+                                <a href="mailto:{{ product.supplier.email }}">{{ product.supplier.email }}</a>
+                            </div>
+                        {% endif %}
+                        
+                        {% if product.supplier.phone %}
+                            <div>
+                                <i class="fas fa-phone me-2 text-muted"></i>
+                                <a href="tel:{{ product.supplier.phone }}">{{ product.supplier.phone }}</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if product.supplier.address %}
+                        <div>
+                            <i class="fas fa-map-marker-alt me-2 text-muted"></i>
+                            {{ product.supplier.address }}
+                        </div>
+                    {% endif %}
+                    
+                    {% if product.quantity_in_stock <= product.reorder_level %}
+                        <div class="mt-4">
+                            <a href="{{ url_for('inventory.add_purchase_order') }}" class="btn btn-success w-100">
+                                <i class="fas fa-shopping-cart me-1"></i>Create Purchase Order
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Stock Chart -->
+            <div class="card">
+                <div class="card-header bg-success bg-opacity-25">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line text-success me-2"></i>Stock History
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="stockChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete <strong>{{ product.name }}</strong>?
+                This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('inventory.delete_product', product_id=product.id) }}" method="POST">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Prepare data for stock history chart
+        const ctx = document.getElementById('stockChart').getContext('2d');
+        
+        // Get transaction data from the DOM
+        const transactions = [
+            {% for transaction in transactions %}
+                {
+                    date: "{{ transaction.transaction_date.strftime('%Y-%m-%d') }}",
+                    type: "{{ transaction.transaction_type }}",
+                    quantity: {{ transaction.quantity }}
+                },
+            {% endfor %}
+        ];
+        
+        // Process data for chart
+        const dates = [];
+        const stockLevels = [];
+        let runningStock = {{ product.quantity_in_stock }};
+        
+        // Reverse to start from oldest
+        transactions.reverse();
+        
+        // Calculate running stock level
+        transactions.forEach(transaction => {
+            dates.push(transaction.date);
+            
+            if (transaction.type === 'sale') {
+                runningStock += transaction.quantity; // Add back sales
+            } else if (transaction.type === 'purchase') {
+                runningStock -= transaction.quantity; // Remove purchases
+            }
+            
+            stockLevels.push(runningStock);
+        });
+        
+        // Add current date and stock level
+        dates.push("Current");
+        stockLevels.push({{ product.quantity_in_stock }});
+        
+        // Reverse back to show oldest to newest
+        dates.reverse();
+        stockLevels.reverse();
+        
+        // Create chart
+        const stockChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Stock Level',
+                    data: stockLevels,
+                    backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                    borderColor: 'rgba(40, 167, 69, 1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    fill: true
+                }, {
+                    label: 'Reorder Level',
+                    data: Array(dates.length).fill({{ product.reorder_level }}),
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Quantity'
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

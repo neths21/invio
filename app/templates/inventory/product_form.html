@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - AI Inventory Tracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('main.index') }}">Dashboard</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('inventory.products') }}">Products</a>
+            </li>
+            <li class="breadcrumb-item active">{{ title }}</li>
+        </ol>
+    </nav>
+    
+    <div class="card">
+        <div class="card-header bg-primary bg-opacity-25">
+            <h5 class="mb-0">
+                <i class="fas fa-{% if product %}edit{% else %}plus{% endif %} text-primary me-2"></i>
+                {{ title }}
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+
+                <div class="row">
+                    <!-- Basic Information -->
+                    <div class="col-md-6">
+                        <h5 class="border-bottom pb-2 mb-3">Basic Information</h5>
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Product Name*</label>
+                            {{ form.name(
+                                class="form-control" + (" is-invalid" if form.name.errors else ""),
+                                placeholder="Enter product name"
+                            ) }}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="sku" class="form-label">SKU*</label>
+                            {{ form.sku(
+                                class="form-control" + (" is-invalid" if form.sku.errors else ""),
+                                placeholder="Enter product SKU",
+                                id="sku-input"
+                            ) }}
+                            {% if form.sku.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.sku.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+
+                            <!-- SCAN BARCODE BUTTON -->
+                            <button type="button"
+                                    class="btn btn-secondary mt-2"
+                                    id="open-camera-btn">
+                                Scan Barcode
+                            </button>
+
+                            <!-- HIDDEN FIELD TO STORE BASE64 IMAGE -->
+                            <input type="hidden"
+                                   name="barcode_image_data"
+                                   id="barcodeImageData">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            {{ form.description(
+                                class="form-control" + (" is-invalid" if form.description.errors else ""),
+                                rows=3,
+                                placeholder="Enter product description"
+                            ) }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="category_id" class="form-label">Category*</label>
+                                {{ form.category_id(
+                                    class="form-select" + (" is-invalid" if form.category_id.errors else "")
+                                ) }}
+                                {% if form.category_id.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.category_id.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="supplier_id" class="form-label">Supplier*</label>
+                                {{ form.supplier_id(
+                                    class="form-select" + (" is-invalid" if form.supplier_id.errors else "")
+                                ) }}
+                                {% if form.supplier_id.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.supplier_id.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Inventory Information -->
+                    <div class="col-md-6">
+                        <h5 class="border-bottom pb-2 mb-3">Inventory Information</h5>
+                        
+                        <div class="mb-3">
+                            <label for="unit_price" class="form-label">Unit Price*</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                {{ form.unit_price(
+                                    class="form-control" + (" is-invalid" if form.unit_price.errors else ""),
+                                    placeholder="0.00"
+                                ) }}
+                                {% if form.unit_price.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.unit_price.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="quantity_in_stock" class="form-label">Quantity in Stock*</label>
+                            {{ form.quantity_in_stock(
+                                class="form-control" + (" is-invalid" if form.quantity_in_stock.errors else ""),
+                                placeholder="0"
+                            ) }}
+                            {% if form.quantity_in_stock.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.quantity_in_stock.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="reorder_level" class="form-label">Reorder Level*</label>
+                                {{ form.reorder_level(
+                                    class="form-control" + (" is-invalid" if form.reorder_level.errors else ""),
+                                    placeholder="0"
+                                ) }}
+                                {% if form.reorder_level.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.reorder_level.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="reorder_quantity" class="form-label">Reorder Quantity*</label>
+                                {{ form.reorder_quantity(
+                                    class="form-control" + (" is-invalid" if form.reorder_quantity.errors else ""),
+                                    placeholder="0"
+                                ) }}
+                                {% if form.reorder_quantity.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.reorder_quantity.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-end mt-4">
+                    <a href="{{ url_for('inventory.products') }}" class="btn btn-secondary me-2">
+                        Cancel
+                    </a>
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- CAMERA MODAL -->
+<div class="modal fade" id="cameraModal" tabindex="-1" aria-labelledby="cameraModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"> 
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="cameraModalLabel">Scan Barcode</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center">
+        <!-- Live camera feed -->
+        <video id="cameraVideo" width="100%" autoplay playsinline></video>
+        <!-- Preview image (hidden initially) -->
+        <img id="previewImage" style="display:none; max-width:100%; border-radius:4px;" />
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancel-camera-btn">
+          Cancel
+        </button>
+        <!-- This shows while camera is streaming -->
+        <button type="button" class="btn btn-primary" id="capture-btn">
+          Capture
+        </button>
+        <!-- These show only after capture -->
+        <button type="button" class="btn btn-warning" id="retry-btn" style="display:none;">
+          Retry
+        </button>
+        <button type="button" class="btn btn-success" id="use-image-btn" style="display:none;">
+          Use Image
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

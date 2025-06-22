@@ -1,0 +1,402 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - AI Inventory Tracker{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0 fs-4 fw-semibold">Dashboard Overview</h1>
+    <div>
+        <div class="btn-group time-filter" role="group">
+            <button type="button" class="btn btn-sm btn-outline-primary" id="filter-today" data-period="today">
+                <i class="fas fa-calendar-day me-1"></i> Today
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-primary active" id="filter-week" data-period="week">
+                <i class="fas fa-calendar-week me-1"></i> This Week
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="filter-month" data-period="month">
+                <i class="fas fa-calendar-alt me-1"></i> This Month
+            </button>            <button type="button" class="btn btn-sm btn-outline-primary" id="filter-year" data-period="year">
+                <i class="fas fa-calendar-alt me-1"></i> This Year
+            </button>
+        </div>
+        <button class="btn btn-sm btn-primary ms-2" id="export-dashboard">
+            <i class="fas fa-download me-1"></i> Export
+        </button>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="stat-title">Total Products</p>
+                        <h3 class="stat-value">{{ product_count }}</h3>
+                    </div>
+                    <div class="icon-container" style="background-color: rgba(67, 97, 238, 0.1);">
+                        <i class="fas fa-boxes fa-lg text-primary"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('inventory.products') }}" class="stat-link text-primary d-flex align-items-center">
+                        View All Products
+                        <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="stat-title">Categories</p>
+                        <h3 class="stat-value">{{ category_count }}</h3>
+                    </div>
+                    <div class="icon-container" style="background-color: rgba(76, 201, 240, 0.1);">
+                        <i class="fas fa-tags fa-lg text-info"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('inventory.categories') }}" class="stat-link text-info d-flex align-items-center">
+                        View All Categories
+                        <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="stat-title">Suppliers</p>
+                        <h3 class="stat-value">{{ supplier_count }}</h3>
+                    </div>
+                    <div class="icon-container" style="background-color: rgba(247, 37, 133, 0.1);">
+                        <i class="fas fa-truck fa-lg text-warning"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('inventory.suppliers') }}" class="stat-link text-warning d-flex align-items-center">
+                        View All Suppliers
+                        <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="stat-title">Transactions</p>
+                        <h3 class="stat-value">{{ transaction_count }}</h3>
+                    </div>
+                    <div class="icon-container" style="background-color: rgba(229, 56, 59, 0.1);">
+                        <i class="fas fa-exchange-alt fa-lg text-danger"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('inventory.transactions') }}" class="stat-link text-danger d-flex align-items-center">
+                        View All Transactions
+                        <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Inventory Overview -->
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Inventory Overview</h5>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-link text-muted dropdown-toggle" type="button" id="inventoryOverviewDropdown" data-bs-toggle="dropdown">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="inventoryOverviewDropdown">
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-download me-2"></i> Export Data</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-print me-2"></i> Print</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-sync me-2"></i> Refresh</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                <canvas id="inventoryChart" height="250"></canvas>
+            </div>
+        </div>
+        
+        <!-- Recent Transactions -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Transactions</h5>
+                <a href="{{ url_for('inventory.transactions') }}" class="btn btn-sm btn-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Type</th>
+                                <th>Quantity</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in recent_transactions %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="product-icon me-2">
+                                            <i class="fas fa-box text-primary"></i>
+                                        </div>
+                                        <div>{{ transaction.product.name }}</div>
+                                    </div>
+                                </td>                                <td>
+                                    {% if transaction.transaction_type == 'purchase' %}
+                                    <span class="badge bg-success">Stock In</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">Stock Out</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ transaction.quantity }}</td>
+                                <td>{{ transaction.transaction_date.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    <span class="badge {{ 'bg-success' if transaction.transaction_type == 'purchase' else 'bg-warning' }}">
+                                        {{ 'Received' if transaction.transaction_type == 'purchase' else 'Released' }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Low Stock Alerts -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Low Stock Alerts</h5>
+                <span class="badge bg-danger">{{ low_stock_products|length }}</span>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for product in low_stock_products %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div class="alert-icon me-3">
+                                <i class="fas fa-exclamation-triangle text-danger"></i>
+                            </div>                            <div>
+                                <p class="mb-0 fw-medium">{{ product.name }}</p>
+                                <small class="text-muted">Current stock: {{ product.quantity_in_stock }} (Min: {{ product.reorder_level }})</small>
+                            </div>
+                        </div>                        <a href="{{ url_for('inventory.view_product', product_id=product.id) }}" class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{{ url_for('inventory.products') }}" class="text-primary">View All Products</a>
+            </div>
+        </div>
+        
+        <!-- Recent Purchase Orders -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Purchase Orders</h5>
+                <a href="{{ url_for('inventory.purchase_orders') }}" class="btn btn-sm btn-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for order in recent_purchase_orders %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center">
+                                <div class="order-icon me-3">
+                                    <i class="fas fa-file-invoice text-primary"></i>
+                                </div>
+                                <div>
+                                    <p class="mb-0 fw-medium">PO-{{ order.id }}</p>
+                                    <small class="text-muted">{{ order.supplier.name }}</small>
+                                </div>
+                            </div>
+                            <span class="badge {{ 'badge-warning' if order.status == 'PENDING' else 'badge-success' }}">
+                                {{ order.status }}
+                            </span>
+                        </div>                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">{{ order.created_at.strftime('%Y-%m-%d') }}</small>
+                            <a href="{{ url_for('inventory.view_purchase_order', order_id=order.id) }}" class="text-primary">View Details</a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {        // Time period filter handling
+        const timeFilterButtons = document.querySelectorAll('.time-filter button');
+        timeFilterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Get the selected period
+                const period = this.getAttribute('data-period');
+                
+                // Remove active class from all buttons
+                timeFilterButtons.forEach(btn => btn.classList.remove('active'));
+                
+                // Add active class to the clicked button
+                this.classList.add('active');
+                
+                // Redirect to the dashboard with the selected period
+                window.location.href = '/?period=' + period;
+            });
+        });
+        
+        // Set active class based on current period when page loads
+        const currentPeriod = '{{ active_period|default("week") }}';
+        timeFilterButtons.forEach(button => {
+            if (button.getAttribute('data-period') === currentPeriod) {
+                button.classList.add('active');
+            } else {
+                button.classList.remove('active');
+            }
+        });
+        
+        // Handle export dashboard button
+        const exportDashboardBtn = document.getElementById('export-dashboard');
+        if (exportDashboardBtn) {
+            exportDashboardBtn.addEventListener('click', function() {
+                exportDashboardData();
+            });
+        }
+        
+        // Function to export dashboard data
+        function exportDashboardData() {
+            // Prepare data for export
+            const currentDate = new Date().toLocaleDateString();
+            const currentTime = new Date().toLocaleTimeString();
+            let csvContent = 'data:text/csv;charset=utf-8,';
+            
+            // Add header
+            csvContent += 'AI Inventory Tracker - Dashboard Export\r\n';
+            csvContent += 'Date: ' + currentDate + ' ' + currentTime + '\r\n';
+            csvContent += 'Time Period: ' + currentPeriod + '\r\n\r\n';
+            
+            // Add summary statistics
+            csvContent += 'SUMMARY STATISTICS\r\n';
+            csvContent += 'Total Products,' + {{ product_count }} + '\r\n';
+            csvContent += 'Categories,' + {{ category_count }} + '\r\n';
+            csvContent += 'Suppliers,' + {{ supplier_count }} + '\r\n';
+            csvContent += 'Transactions,' + {{ transaction_count }} + '\r\n\r\n';
+            
+            // Add inventory chart data
+            csvContent += 'INVENTORY OVERVIEW\r\n';
+            
+            // Get chart labels and data
+            const labels = {{ chart_labels|tojson }};
+            const stockInData = {{ stock_in_by_month|tojson }};
+            const stockOutData = {{ stock_out_by_month|tojson }};
+            
+            // Add chart labels row
+            csvContent += 'Period,' + labels.join(',') + '\r\n';
+            
+            // Add stock in data
+            csvContent += 'Stock In,' + stockInData.join(',') + '\r\n';
+            
+            // Add stock out data
+            csvContent += 'Stock Out,' + stockOutData.join(',') + '\r\n\r\n';
+            
+            // Add low stock products
+            csvContent += 'LOW STOCK PRODUCTS\r\n';
+            csvContent += 'Product Name,Current Stock,Reorder Level\r\n';
+              {% for product in low_stock_products %}
+            csvContent += '{{ product.name }},' + {{ product.quantity_in_stock }} + ',' + {{ product.reorder_level }} + '\r\n';
+            {% endfor %}
+            
+            // Create download link
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', 'dashboard_export_' + currentDate.replace(/\//g, '-') + '.csv');
+            document.body.appendChild(link);
+            
+            // Trigger download and remove link
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Inventory Overview Chart
+        const ctx = document.getElementById('inventoryChart').getContext('2d');
+        const inventoryChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ chart_labels|default(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])|tojson }},
+                datasets: [{
+                    label: 'Stock In',
+                    data: {{ stock_in_by_month|tojson }},
+                    borderColor: '#4361ee',
+                    backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Stock Out',
+                    data: {{ stock_out_by_month|tojson }},
+                    borderColor: '#f72585',
+                    backgroundColor: 'rgba(247, 37, 133, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            drawBorder: false
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

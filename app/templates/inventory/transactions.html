@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+{% block title %}Transactions - AI Inventory Tracker{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0 fs-4 fw-semibold">Inventory Transactions</h1>
+    <div>
+        <a href="{{ url_for('inventory.add_transaction') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Add Transaction
+        </a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <!-- Total Transactions -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="stat-title">Total Transactions</p>
+                        <h3 class="stat-value">{{ transactions|length }}</h3>
+                    </div>
+                    <div class="icon-container" style="background-color: rgba(67, 97, 238, 0.1);">
+                        <i class="fas fa-exchange-alt fa-lg text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock In -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="stat-title">Stock In</p>
+                        <h3 class="stat-value">{{ stock_in_count }}</h3>
+                    </div>
+                    <div class="icon-container" style="background-color: rgba(76, 201, 240, 0.1);">
+                        <i class="fas fa-arrow-circle-down fa-lg text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock Out -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="stat-title">Stock Out</p>
+                        <h3 class="stat-value">{{ stock_out_count }}</h3>
+                    </div>
+                    <div class="icon-container" style="background-color: rgba(247, 37, 133, 0.1);">
+                        <i class="fas fa-arrow-circle-up fa-lg text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Value -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">                    <div>
+                        <p class="stat-title">Total Value</p>
+                        <h3 class="stat-value">
+                            $<span class="number-value">{% if total_value %}
+                                {% if total_value >= 1000000000 %}
+                                    {{ "%.2f"|format(total_value / 1000000000) }}
+                                {% elif total_value >= 1000000 %}
+                                    {{ "%.2f"|format(total_value / 1000000) }}
+                                {% elif total_value >= 1000 %}
+                                    {{ "%.2f"|format(total_value / 1000) }}
+                                {% else %}
+                                    {{ "%.2f"|format(total_value) }}
+                                {% endif %}
+                            {% else %}
+                                0.00
+                            {% endif %}</span><span class="suffix">{% if total_value %}
+                                {% if total_value >= 1000000000 %}B
+                                {% elif total_value >= 1000000 %}M
+                                {% elif total_value >= 1000 %}K
+                                {% endif %}
+                            {% endif %}</span>
+                        </h3>
+                    </div>
+                    <div class="icon-container" style="background-color: rgba(229, 56, 59, 0.1);">
+                        <i class="fas fa-dollar-sign fa-lg text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction History Table (unchanged) -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Transaction History</h5>
+        <div class="d-flex align-items-center">
+            <div class="input-group me-2" style="width: 250px;">
+                <span class="input-group-text bg-transparent border-end-0">
+                    <i class="fas fa-search"></i>
+                </span>
+                <input type="text" class="form-control border-start-0" id="transactionSearch" placeholder="Search transactions...">
+            </div>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown">
+                    <i class="fas fa-filter me-1"></i>Filter
+                </button>                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="filterDropdown">
+                    <li><h6 class="dropdown-header">Transaction Type</h6></li>
+                    <li><a class="dropdown-item {% if active_filter == 'purchase' %}active{% endif %}" href="{{ url_for('inventory.transactions', type='purchase') }}">Stock In</a></li>
+                    <li><a class="dropdown-item {% if active_filter == 'sale' %}active{% endif %}" href="{{ url_for('inventory.transactions', type='sale') }}">Stock Out</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item {% if not active_filter %}active{% endif %}" href="{{ url_for('inventory.transactions') }}">Show All</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover" id="transactionsTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Product</th>
+                        <th>Type</th>
+                        <th>Quantity</th>
+                        <th>Unit Price</th>
+                        <th>Total</th>
+                        <th>Created By</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                        <tr>
+                            <td>{{ transaction.transaction_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="product-icon me-2"
+                                         style="background-color: rgba(67, 97, 238, 0.1); width: 32px; height: 32px;
+                                                display: flex; align-items: center; justify-content: center; border-radius: 6px;">
+                                        <i class="fas fa-box text-primary"></i>
+                                    </div>
+                                    <a href="{{ url_for('inventory.view_product', product_id=transaction.product.id) }}"
+                                       class="text-decoration-none">
+                                        {{ transaction.product.name }}
+                                    </a>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if transaction.transaction_type|lower == 'purchase' or transaction.transaction_type|lower == 'in' %}
+                                        badge-success
+                                    {% elif transaction.transaction_type|lower == 'sale' %}
+                                        badge-warning
+                                    {% else %}
+                                        badge-primary
+                                    {% endif %}">
+                                    {% if transaction.transaction_type|lower == 'purchase' or transaction.transaction_type|lower == 'in' %}
+                                        Stock In
+                                    {% elif transaction.transaction_type|lower == 'sale' %}
+                                        Stock Out
+                                    {% else %}
+                                        {{ transaction.transaction_type|capitalize }}
+                                    {% endif %}
+                                </span>
+                            </td>                            <td><span class="fw-medium">{{ transaction.quantity }}</span></td>
+                            <td>${{ "%.2f"|format(transaction.unit_price) }}</td>
+                            <td><span class="fw-medium">
+                                $<span class="number-value">{% if transaction.total_price >= 1000000 %}
+                                    {{ "%.2f"|format(transaction.total_price / 1000000) }}
+                                {% elif transaction.total_price >= 1000 %}
+                                    {{ "%.2f"|format(transaction.total_price / 1000) }}
+                                {% else %}
+                                    {{ "%.2f"|format(transaction.total_price) }}
+                                {% endif %}</span><span class="suffix">{% if transaction.total_price >= 1000000 %}M
+                                {% elif transaction.total_price >= 1000 %}K
+                                {% endif %}</span>
+                            </span></td>
+                            <td>{{ transaction.created_by.username }}</td>
+                            <td>
+                                {% if transaction.notes %}
+                                    <button type="button" class="btn btn-sm btn-icon btn-outline-secondary"
+                                            data-bs-toggle="tooltip" title="{{ transaction.notes }}">
+                                        <i class="fas fa-file-alt"></i>
+                                    </button>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card-footer d-flex justify-content-between align-items-center">
+        <div><span class="text-muted">Showing {{ transactions|length }} transactions</span></div>
+        <nav aria-label="Transactions pagination">
+            <ul class="pagination justify-content-end mb-0">
+                <li class="page-item disabled">
+                    <a class="page-link" href="#" tabindex="-1">Previous</a>
+                </li>
+                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="#">Next</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Activate all tooltips (for “Notes” icons)
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+            new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        // Simple client‐side search/filter for transactions
+        const searchInput = document.getElementById('transactionSearch');
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function() {
+                const searchTerm = this.value.toLowerCase();
+                const table = document.getElementById('transactionsTable');
+                const rows = table.getElementsByTagName('tr');
+
+                for (let i = 1; i < rows.length; i++) {
+                    const rowText = rows[i].textContent.toLowerCase();
+                    rows[i].style.display = rowText.includes(searchTerm) ? '' : 'none';
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
